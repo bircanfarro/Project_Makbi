@@ -74,10 +74,53 @@ PValExtract = function(ireg)
 pvals = sapply(1:nVars, PValExtract)
 bestPredictors = data.frame(name=numericVarNames,pval=pvals)
 bestPredictors = bestPredictors[order(bestPredictors$pval),]
-
+# got 16 best predictors
+print(bestPredictors)
 ```
 
+So the 16 predictors based on order of univariate t-vals are
+```{r}
 
+print(bestPredictors$name)
+```
+
+Let's now see if we get the same set of predictors following Bircan's method + eliminating the names above. 
+```{r}
+library(MASS) 
+library(car)
+numericVars = which(sapply(train, is.numeric)) #index vector numeric variables
+numericVarNames = names(numericVars) #saving names vector for use later
+
+# I eliminate some categorical numerical columns (categories coded as numbers)
+# manually here. But I need to write some smarter code to eliminate them 
+# automatically
+numericVarNames = numericVarNames[!numericVarNames %in% 
+                c("Id", "SalePrice", "OverallQual", "GarageCars", 
+                  "YearBuilt", "YearRemodAdd", "GarageYrBlt", 
+                  "Fireplaces", "FullBath", "MSSubClass", 
+                  "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr", 
+                  "EnclosedPorch", "ScreenPorch", "OverallCond", "TotRmsAbvGrd", 
+                  "MoSold", "YrSold", "MiscVal")] 
+
+train_numVar = na.omit(train[, c(numericVarNames, "SalePrice")])
+
+model.empty = lm(SalePrice ~ 1, data = na.omit(train_numVar)) #The model with an intercept ONLY.
+model.full = lm(SalePrice ~ ., data = na.omit(train_numVar)) #The model with ALL variables.
+scope = list(lower = formula(model.empty), upper = formula(model.full))
+
+#Stepwise regression using AIC as the criteria (the penalty k = 2).
+forwardAIC = step(model.empty, scope, direction = "forward", k = 2, trace=FALSE) #k is degrees of freedom, k=2 makes it AIC, according to doc
+
+#Checking the model summary
+#Found 11 variables with forward AIC. 
+listcoef = coef(forwardAIC)
+bestAICPredictorNames = names(listcoef)[-1] #11 predictors by AIC (Bircan approach)
+bestTVALPredictorNames = bestPredictors$name #16 predictors by order of univariate t-values (Marius approach)
+
+# Intersection of AIC predictors and univariate t-val predictors
+commonPredictors = intersect(bestAICPredictorNames, bestTVALPredictorNames) # still 11, so the AIC predictors are a subset of those found by univariate tval
+print(commonPredictors)
+```
 
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
