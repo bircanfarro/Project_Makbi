@@ -1,0 +1,130 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Most missing data (NA) columns were valid categories. Replace with 'None'? 
+
+```{r}
+setwd("~/DataScience/MachineLearningProject/data")
+library(dplyr)
+df = read.csv('train.csv')
+
+# when LotFrontage=NA, 226 are detached family homes
+#df1 = df  %>% filter(is.na(LotFrontage) & (BldgType=='1Fam'))
+train = df
+
+
+```
+
+Following is code to compute the correlation of all numerical columns. 
+
+```{r}
+library(corrplot)
+# correlation matrix
+# keep numerical columns
+numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
+numericVarNames <- names(numericVars) #saving names vector for use later
+
+# correlation matrix
+train_numVar <- train[, numericVars]
+cor_numVar <- cor(train_numVar, use="pairwise.complete.obs") #correlations of all numeric variables
+
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+
+#select only high correlations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.1)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
+
+corrplot(cor_numVar, tl.col="black", tl.pos = "lt")
+corrplot(cor_numVar, method = "ellipse")
+corrplot(cor_numVar, method = "color")
+
+
+```
+
+Let's now try to order our variables in the order of the t-stats of univariate regressions. 
+```{r}
+numericVars = which(sapply(train, is.numeric)) #index vector numeric variables
+numericVarNames = names(numericVars) #saving names vector for use later
+
+# I eliminate some categorical numerical columns (categories coded as numbers)
+# manually here. But I need to write some smarter code to eliminate them 
+# automatically
+numericVarNames = numericVarNames[!numericVarNames %in% 
+                c("Id", "SalePrice", "OverallQual", "GarageCars", 
+                  "YearBuilt", "YearRemodAdd", "GarageYrBlt", 
+                  "Fireplaces", "FullBath", "MSSubClass", 
+                  "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr", 
+                  "EnclosedPorch", "ScreenPorch", "OverallCond", "TotRmsAbvGrd", 
+                  "MoSold", "YrSold", "MiscVal")] 
+
+#MiscVal and MiscFeature: value of misc feature, but this is odd: "elevator" etc. Hard to predict, eliminate it ???
+
+nVars = length(numericVarNames)
+PValExtract = function(ireg)
+{
+  varname = numericVarNames[ireg]
+  model = lm(as.formula(paste('SalePrice ~ ', varname)), data=train)  
+  coeff = coef(summary(model))
+  pval = coeff[2,"Pr(>|t|)"]  
+}
+
+pvals = sapply(1:nVars, PValExtract)
+bestPredictors = data.frame(name=numericVarNames,pval=pvals)
+bestPredictors = bestPredictors[order(bestPredictors$pval),]
+# got 16 best predictors
+print(bestPredictors)
+```
+
+So the 16 predictors based on order of univariate t-vals are
+```{r}
+
+print(bestPredictors$name)
+```
+
+Let's now see if we get the same set of predictors following Bircan's method + eliminating the names above. 
+```{r}
+library(MASS) 
+library(car)
+numericVars = which(sapply(train, is.numeric)) #index vector numeric variables
+numericVarNames = names(numericVars) #saving names vector for use later
+
+# I eliminate some categorical numerical columns (categories coded as numbers)
+# manually here. But I need to write some smarter code to eliminate them 
+# automatically
+numericVarNames = numericVarNames[!numericVarNames %in% 
+                c("Id", "SalePrice", "OverallQual", "GarageCars", 
+                  "YearBuilt", "YearRemodAdd", "GarageYrBlt", 
+                  "Fireplaces", "FullBath", "MSSubClass", 
+                  "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr", 
+                  "EnclosedPorch", "ScreenPorch", "OverallCond", "TotRmsAbvGrd", 
+                  "MoSold", "YrSold", "MiscVal")] 
+
+train_numVar = na.omit(train[, c(numericVarNames, "SalePrice")])
+
+model.empty = lm(SalePrice ~ 1, data = na.omit(train_numVar)) #The model with an intercept ONLY.
+model.full = lm(SalePrice ~ ., data = na.omit(train_numVar)) #The model with ALL variables.
+scope = list(lower = formula(model.empty), upper = formula(model.full))
+
+#Stepwise regression using AIC as the criteria (the penalty k = 2).
+forwardAIC = step(model.empty, scope, direction = "forward", k = 2, trace=FALSE) #k is degrees of freedom, k=2 makes it AIC, according to doc
+
+#Checking the model summary
+#Found 11 variables with forward AIC. 
+listcoef = coef(forwardAIC)
+bestAICPredictorNames = names(listcoef)[-1] #11 predictors by AIC (Bircan approach)
+bestTVALPredictorNames = bestPredictors$name #16 predictors by order of univariate t-values (Marius approach)
+
+# Intersection of AIC predictors and univariate t-val predictors
+commonPredictors = intersect(bestAICPredictorNames, bestTVALPredictorNames) # still 11, so the AIC predictors are a subset of those found by univariate tval
+print(commonPredictors)
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
