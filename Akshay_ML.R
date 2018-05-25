@@ -7,7 +7,6 @@ data = read.csv("train.csv", header=TRUE, sep = ',')
 train = read.csv("train.csv", stringsAsFactors = F)
 train = filter(train, GrLivArea<4000)
 test = read.csv("test.csv", stringsAsFactors = F)
-#data
 
 #Basic numerical EDA for cars dataset.
 summary(train) #Five number summaries.
@@ -94,13 +93,14 @@ View(train_numVar)
  library(car) #Companion to applied regression.
  influencePlot(model)
  
- vif(model.saturated) #Assessing the variance inflation factors for the variables
+ vif(model) #Assessing the variance inflation factors for the variables
  #in our model, helpful for identify multicolinearity
  
  #Added variable plots for assessing the contribution of each additional variable.
- avPlots(model.saturated) #Distinct patterns are indications of good contributions
+ avPlots(model) #Distinct patterns are indications of good contributions
  #to the model; absent patterns usually are pointers to
  #variables that could be dropped from the model.
+ 
  
  
  #We can use stepwise regression to help automate the variable selection process.
@@ -109,6 +109,12 @@ View(train_numVar)
  model.empty = lm(SalePrice ~ 1, data = na.omit(train_numVar)) #The model with an intercept ONLY.
  model.full = lm(SalePrice ~ ., data = na.omit(train_numVar)) #The model with ALL variables.
  scope = list(lower = formula(model.empty), upper = formula(model.full))
+ 
+ 
+ #AIC
+ AIC(model.empty, model.full)
+ #BIC
+ BIC(model.empty, model.full)
  
  
  
