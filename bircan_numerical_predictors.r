@@ -1,6 +1,8 @@
 library(MASS) 
 library(car)
+library(psych)
 train = read.csv('train.csv') 
+
 
 
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
@@ -8,47 +10,75 @@ numericVarNames <- names(numericVars) #saving names vector for use later
 train_numVar <- train[, numericVars]
 
 
-model.empty = lm(SalePrice ~ 1, data = na.omit(train_numVar)) #The model with an intercept ONLY.
-model.full = lm(SalePrice ~ ., data = na.omit(train_numVar)) #The model with ALL variables.
-scope = list(lower = formula(model.empty), upper = formula(model.full))
+model.1 = lm(SalePrice ~ ., data = na.omit(train_numVar))
+summary(model.1)
+vif(model.1)
+alias(model.1)
 
 
-#Stepwise regression using AIC as the criteria (the penalty k = 2).
-forwardAIC = step(model.empty, scope, direction = "forward", k = 2)
-backwardAIC = step(model.full, scope, direction = "backward", k = 2)
-bothAIC.empty = step(model.empty, scope, direction = "both", k = 2)
-bothAIC.full = step(model.full, scope, direction = "both", k = 2)
+model.2 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+               YearBuilt + MasVnrArea + BsmtFinSF1 + X1stFlrSF + X2ndFlrSF + BsmtFullBath +
+               BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces +  GarageCars +
+               WoodDeckSF + ScreenPorch + PoolArea, data = na.omit(train_numVar))
 
-#Stepwise regression using BIC as the criteria (the penalty k = log(n)).
-forwardBIC = step(model.empty, scope, direction = "forward", k = log(50))
-backwardBIC = step(model.full, scope, direction = "backward", k = log(50))
-bothBIC.empty = step(model.empty, scope, direction = "both", k = log(50))
-bothBIC.full = step(model.full, scope, direction = "both", k = log(50))
-
-
-#Checking the model summary and assumptions of the reduced model.
-summary(forwardAIC)
-summary(forwardBIC)
-plot(forwardAIC)
-influencePlot(forwardAIC)
-vif(forwardAIC)
-avPlots(forwardAIC)
+vif(model.2)
 
 
 
-#Predicting new observations.
-forwardAIC$fitted.values #Returns the fitted values.
+model.3 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+               YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
+               BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
+               WoodDeckSF + ScreenPorch + PoolArea, data = na.omit(train_numVar))
+vif(model.3)
 
-newdata = data.frame(Murder = c(1.5, 7.5, 12.5),
-                     HS.Grad = c(60, 50, 40),
-                     Frost = c(75, 55, 175),
-                     Population = c(7500, 554, 1212))
 
-predict(forwardAIC, newdata, interval = "confidence") #Construct confidence intervals
-#for the average value of an
-#outcome at a specific point.
 
-predict(forwardAIC, newdata, interval = "prediction") #Construct prediction invervals
-#for a single observation's
-#outcome value at a specific point.
-confint(forwardAIC)
+model.4 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+               YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
+               BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
+               WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + GrLivArea, data = na.omit(train_numVar))
+vif(model.4)
+
+
+#marius' model
+model.5 = lm(SalePrice ~ GrLivArea + GarageArea + TotalBsmtSF + X1stFlrSF + MasVnrArea + 
+               BsmtFinSF1 + WoodDeckSF + LotFrontage + X2ndFlrSF + OpenPorchSF + LotArea + 
+               BsmtUnfSF + PoolArea  + X3SsnPorch + LowQualFinSF + BsmtFinSF2, data = na.omit(train_numVar))
+
+vif(model.5) #Error in vif.default(model.5) : there are aliased coefficients in the model
+
+
+#The model was found based on AIC 
+model.6 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
+               YearRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
+               BedroomAbvGr + TotRmsAbvGrd + MSSubClass + YearBuilt + OverallCond + 
+               GarageCars + OpenPorchSF + ScreenPorch + BsmtHalfBath, data = na.omit(train_numVar))
+
+vif(model.6) #GrLivArea, GarageCars, TotRmsAbvGrd  are over 4, 
+
+
+model.7 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
+               YearRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
+               BedroomAbvGr +  MSSubClass + YearBuilt + OverallCond + OpenPorchSF +
+               ScreenPorch + BsmtHalfBath, data = na.omit(train_numVar))
+
+vif(model.7)
+
+AIC(model.1) #26789.4
+AIC(model.2) #26768.64
+AIC(model.3) #26987.86
+AIC(model.4) #26777.7
+AIC(model.5) #27332.17
+AIC(model.6) #26098.95 but there are multicollinierity
+AIC(model.7) #26128.47  
+
+
+#model.7 seems the best numerical model with the least multicollinieraity and the second highest AIC
+
+
+summary(model.7)
+#Multiple R-squared:  0.871,
+#Adjusted R-squared:  0.8691
+#F-statistic: 464.1 on 16 and 1100 DF,  p-value: < 2.2e-16
+
+
