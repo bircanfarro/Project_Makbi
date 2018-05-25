@@ -80,5 +80,9 @@ summary(model.7)
 #Multiple R-squared:  0.871,
 #Adjusted R-squared:  0.8691
 #F-statistic: 464.1 on 16 and 1100 DF,  p-value: < 2.2e-16
-
+plot(model.7)
+influencePlot(model.7)
+vif(model.7)
+avPlots(model.7)
+confint(model.7) # 97.5% confidence
 
