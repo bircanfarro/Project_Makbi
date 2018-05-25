@@ -73,7 +73,7 @@ AIC(model.6) #26098.95 but there are multicollinierity
 AIC(model.7) #26128.47  
 
 
-#model.7 seems the best numerical model with the least multicollinieraity and the second highest AIC
+#model.7 seems the best numerical model with the least multicollinieraity and the second lowest AIC
 
 
 summary(model.7)
