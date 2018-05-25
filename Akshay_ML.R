@@ -5,8 +5,8 @@ library(corrplot)
 # Data cleaning 
 data = read.csv("train.csv", header=TRUE, sep = ',')
 train = read.csv("train.csv", stringsAsFactors = F)
-#test <- read.csv("test.csv", stringsAsFactors = F)
-#data
+train = filter(train, GrLivArea<4000)
+test = read.csv("test.csv", stringsAsFactors = F)
 
 #Basic numerical EDA for cars dataset.
 summary(train) #Five number summaries.
@@ -51,11 +51,16 @@ df1
 ######################################################################################
 # correlation matrix
 # keep numerical columns
- numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
- numericVarNames <- names(numericVars) #saving names vector for use later
+ numericVars = which(sapply(train, is.numeric)) #index vector numeric variables
+numericVars_rest = which(sapply(test, is.numeric)) #index vector numeric variables
+
+ numericVarNames = names(numericVars) #saving names vector for use later
+ 
+ # numerical columns only
+ train_numVar = train[, numericVars]
+ test_numVar = test[, numericVars_rest]
  
  # correlation matrix
- train_numVar = train[, numericVars]
  cor_numVar = cor(train_numVar, use="pairwise.complete.obs") #correlations of all numeric variables
  
  #sort on decreasing correlations with SalePrice
@@ -65,9 +70,9 @@ df1
  CorHigh = names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
  cor_numVar = cor_numVar[CorHigh, CorHigh]
  
- corrplot(cor_numVar, tl.col="black", tl.pos = "lt")
- corrplot(cor_numVar, method = "ellipse")
- corrplot(cor_numVar, method = "color")
+ corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
+ #corrplot(cor_numVar, method = "ellipse")
+ #corrplot(cor_numVar, method = "color")
  
  # looking number of counts for unique values in the column
  train$Condition1
@@ -88,21 +93,28 @@ View(train_numVar)
  library(car) #Companion to applied regression.
  influencePlot(model)
  
- vif(model.saturated) #Assessing the variance inflation factors for the variables
+ vif(model) #Assessing the variance inflation factors for the variables
  #in our model, helpful for identify multicolinearity
  
  #Added variable plots for assessing the contribution of each additional variable.
- avPlots(model.saturated) #Distinct patterns are indications of good contributions
+ avPlots(model) #Distinct patterns are indications of good contributions
  #to the model; absent patterns usually are pointers to
  #variables that could be dropped from the model.
+ 
  
  
  #We can use stepwise regression to help automate the variable selection process.
  #Here we define the minimal model, the full model, and the scope of the models
  #through which to search:
- model.empty = lm(SalePrice ~ 1, data = train_numVar) #The model with an intercept ONLY.
- model.full = lm(SalePrice ~ ., data = train_numVar) #The model with ALL variables.
+ model.empty = lm(SalePrice ~ 1, data = na.omit(train_numVar)) #The model with an intercept ONLY.
+ model.full = lm(SalePrice ~ ., data = na.omit(train_numVar)) #The model with ALL variables.
  scope = list(lower = formula(model.empty), upper = formula(model.full))
+ 
+ 
+ #AIC
+ AIC(model.empty, model.full)
+ #BIC
+ BIC(model.empty, model.full)
  
  
  
@@ -114,11 +126,11 @@ View(train_numVar)
  bothAIC.empty = step(model.empty, scope, direction = "both", k = 2)
  bothAIC.full = step(model.full, scope, direction = "both", k = 2)
  
- #Stepwise regression using BIC as the criteria (the penalty k = log(n)).
- forwardBIC = step(model.empty, scope, direction = "forward", k = log(50))
- backwardBIC = step(model.full, scope, direction = "backward", k = log(50))
- bothBIC.empty = step(model.empty, scope, direction = "both", k = log(50))
- bothBIC.full = step(model.full, scope, direction = "both", k = log(50))
+ #Stepwise regression using BIC as the criteria (the penalty k = log(1460))
+ forwardBIC = step(model.empty, scope, direction = "forward", k = log(1460))
+ backwardBIC = step(model.full, scope, direction = "backward", k = log(1460))
+ bothBIC.empty = step(model.empty, scope, direction = "both", k = log(1460))
+ bothBIC.full = step(model.full, scope, direction = "both", k = log(1460))
  
 
  #Checking the model summary and assumptions of the reduced model.
@@ -130,5 +142,19 @@ View(train_numVar)
  confint(forwardAIC)
  
  #Predicting new observations.
- forwardAIC$fitted.values #Returns the fitted values.
+
+ newdata = test_numVar
+ View(newdata)
+ 
+ 
+ predict(forwardAIC, newdata, interval = "confidence") #Construct confidence intervals
+ #for the average value of an
+ #outcome at a specific point.
+ 
+ predict(forwardAIC, newdata, interval = "prediction") #Construct prediction invervals
+ #for a single observation's
+ #outcome value at a specific point.
+ 
+ 
+ 
  
