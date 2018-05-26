@@ -44,7 +44,7 @@ model.4 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + Over
                BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
                WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF, data = na.omit(train_numVar))
 vif(model.4) # no colliniearity
-AIC(model.4) #26966.64 - AIC is better than model.2 
+AIC(model.4) #26966.64 - AIC is still higher than model.2 
 
 
 
@@ -54,7 +54,7 @@ model.5 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + Over
                BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
                WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF, data = na.omit(train_numVar))
 vif(model.5) # no colliniearity
-AIC(model.5) #26780.55 - AIC is much better than model.2 and model 3
+AIC(model.5) #26780.55 - AIC is much better than model 3 little higher than model 2 but no colliniearity
 
 
 
@@ -105,12 +105,20 @@ model.8 = lm(SalePrice ~ BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea +
                 BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
                 PoolArea + YearRemodAdd + ScreenPorch + X2ndFlrSF + X1stFlrSF + 
                 WoodDeckSF + Fireplaces, data = na.omit(train_numVar))
-
 vif(model.8)
 AIC(model.8) #26980.15 - AIC has increased as expected, but still pretty good
 
 #this model matches with the model was discussed with marius
----------------------------------------------------------------------------------------------------------------
+
+#Changing GrLivArea with X2ndFlrSF and X1stFlrSF and adding TotRmsAbvGrd 
+model.8a = lm(SalePrice ~ GrLivArea + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+               BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
+               PoolArea + YearRemodAdd + ScreenPorch + 
+               WoodDeckSF + Fireplaces, data = na.omit(train_numVar))
+vif(model.8a)
+AIC(model.8a) #26978.12 the result is so close with the one above
+
+ ---------------------------------------------------------------------------------------------------------------
 #marius & bircan
   
 # the model was decided the best with marius on Friday seems matched with my updated seperate features.
