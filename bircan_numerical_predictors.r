@@ -189,6 +189,15 @@ cor(train_numVar$SalePrice, train_numVar$MSSubClass) #-0.084, not surprisingly w
 
 #Added BsmtUnfSF but that introduced some collinearity with BsmtFinSF1. Better AIC but multicolliniarity
 
+# WITHOUT MSSubClass!!
+model.11.1 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+                  AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                  AgeBuilt + X1stFlrSF + BedroomAbvGr +
+                  ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = na.omit(train_numVar))
+AIC(model.11.1) #26998, increased from 26980 when we dropped MSSubClass
+vif(model.11.1) # all under 2.308, decreased from 2.74 when we dropped MSSubClass
+summary(model.11.1) # all our 15 variables are statistically significant
+
 
 # adding BsmtUnfSF features
 model.12 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
@@ -199,6 +208,14 @@ vif(model.12) # multicolliniearity X1stFlrSF, BsmtFinSF1
 AIC(model.12) #26973.98 - better AIC
 summary(model.12) #Adjusted R-squared:  0.7646
 
+# WITHOUT MSSubClass!! adding BsmtUnfSF features
+model.12.1 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+                AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                AgeBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
+                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea,  data = na.omit(train_numVar))
+vif(model.12.1) # multicolliniearity X1stFlrSF, BsmtFinSF1. we know that cor(TotalBsmtSF, X1stFlrSF) = 0.82
+AIC(model.12.1) # 26991, increased from 26973.98 when we dropped MSSubClass
+summary(model.12.1) #Adjusted R-squared: 0.7607, decreased from 0.7646 when we dropped MSSubClass
 
 #extracting BsmtUnfSF and adding Full Bath
 model.13 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
@@ -209,6 +226,14 @@ vif(model.13) # no colliniearity
 AIC(model.13) #26974.69
 summary(model.13) #Adjusted R-squared:  0.7644
 
+# WITHOUT MSSubClass!! extracting BsmtUnfSF and adding Full Bath
+model.13.1 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+                YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                YearBuilt + X1stFlrSF + BedroomAbvGr +
+                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+vif(model.13.1) # no colliniearity
+AIC(model.13.1) #26995.82, increased from 26974.69 when we dropped MSSubClass
+summary(model.13.1) #Adjusted R-squared:  0.7597, decreased from 0.7644 when we dropped MSSubClass
 
 #adding BsmtUnfSF again
 model.14 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
@@ -219,6 +244,14 @@ vif(model.14) # multicolliniearity X1stFlrSF, BsmtFinSF1
 AIC(model.14) #26968.63
 summary(model.14) #Adjusted R-squared:  0.7659
 
+# WITHOUT MSSubClass!! adding BsmtUnfSF again
+model.14.1 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+                YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
+                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+vif(model.14.1) # multicolliniearity X1stFlrSF, BsmtFinSF1
+AIC(model.14.1) # 26988, increased from 26968.63 when we dropped MSSubClass
+summary(model.14.1) #Adjusted R-squared: 0.7616 decreased from 0.7659 when we dropped MSSubClass
 
 #switching  BsmtUnfSF  to BsmtFinSF2
 model.15 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
@@ -229,6 +262,14 @@ vif(model.15) #no multicolliniearity
 AIC(model.15) #26976.68
 summary(model.15) #Adjusted R-squared:  0.7642
 
+# WITHOUT MSSubClass!! switching  BsmtUnfSF  to BsmtFinSF2
+model.15.1 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
+                YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                YearBuilt + X1stFlrSF + BedroomAbvGr + 
+                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+vif(model.15.1) #no multicolliniearity
+AIC(model.15.1) # 26997.8, increased from 26976.68 when we dropped MSSubClass
+summary(model.15.1) #Adjusted R-squared:0.7595, decreased from 0.7642 when we dropped MSSubClass
 
 
 #Conclusion :  the model.11 to model.15 have very close results. at this moment we want the one has least colliniearity, AIC and 
