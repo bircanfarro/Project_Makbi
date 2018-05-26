@@ -1,9 +1,9 @@
-library(MASS) 
 library(car)
 library(psych)
-#train = read.csv('./data/train.csv') 
-train = read.csv('train.csv')
+train = read.csv('./data/train.csv') 
+#train = read.csv('train.csv')
 
+#bircan
 
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
 numericVarNames <- names(numericVars) #saving names vector for use later
@@ -20,37 +20,57 @@ train_numVar$AgeBuilt     = 2018 - train$YearBuilt
 train_numVar$AgeRemodAdd  = 2018 - train$YearRemodAdd
 train_numVar$AgeGarageBlt = 2018 - train$GarageYrBlt
 
+# creating full linear model and summarise to see the significance of each variables
+model.1 = lm(SalePrice ~ ., data = na.omit(train_numVar))
+summary(model.1)
+vif(model.1)
+alias(model.1)
 
-# ALIASED!
-# model.1 = lm(SalePrice ~ ., data = na.omit(train_numVar))
-# summary(model.1)
-# vif(model.1)
-# alias(model.1)
-
-
+# Model formed with the only variables that has the highest significany
 model.2 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                YearBuilt + MasVnrArea + BsmtFinSF1 + X1stFlrSF + X2ndFlrSF + BsmtFullBath +
                BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces +  GarageCars +
                WoodDeckSF + ScreenPorch + PoolArea, data = na.omit(train_numVar))
+vif(model.2) #creates some colliniearity
+AIC(model.2) #26768.64
 
-vif(model.2)
-
-
-
+# extract the variables that creates colliniearity
 model.3 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
-               BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
+               BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars + 
                WoodDeckSF + ScreenPorch + PoolArea, data = na.omit(train_numVar))
-vif(model.3)
+vif(model.3) #no colliniearity
+AIC(model.3) #26987.86 - AIC got higher, model.2 is better
 
 
 
+# adding X1stFlrSF that created multiclliniearity in model.2
 model.4 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
-               YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
+               YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + 
                BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
-               WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + GrLivArea, data = na.omit(train_numVar))
-vif(model.4)
+               WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF, data = na.omit(train_numVar))
+vif(model.4) # no colliniearity
+AIC(model.4) #26966.64 - AIC is still higher than model.2 
 
+
+
+# adding X1stFlrSF, X2ndFlrSF that created multiclliniearity in model.2
+model.5 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+               YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
+               BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
+               WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF, data = na.omit(train_numVar))
+vif(model.5) # no colliniearity
+AIC(model.5) #26780.55 - AIC is much better than model 3 little higher than model 2 but no colliniearity
+
+
+
+# adding TotRmsAbvGrd that created multiclliniearity in model.2
+model.6 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+               YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
+               BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars + TotRmsAbvGrd +
+               WoodDeckSF + ScreenPorch + PoolArea, data = na.omit(train_numVar))
+vif(model.6) #no colliniearity
+AIC(model.6) #26872.29 - model 5 is the best so far
 
 # #marius' model
 # model.5 = lm(SalePrice ~ GrLivArea + GarageArea + TotalBsmtSF + X1stFlrSF + MasVnrArea + 
@@ -60,13 +80,17 @@ vif(model.4)
 # vif(model.5) #Error in vif.default(model.5) : there are aliased coefficients in the model
 # alias(model.5)
 
-#The model was found based on AIC 
-model.6 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
+
+#The model was found based on AIC forward method
+model.7 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
                YearRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
                BedroomAbvGr + TotRmsAbvGrd + MSSubClass + YearBuilt + OverallCond + 
                GarageCars + OpenPorchSF + ScreenPorch + BsmtHalfBath, data = na.omit(train_numVar))
+vif(model.7) #GrLivArea, GarageCars, TotRmsAbvGrd  are over 4, 
+AIC(model.7) #26789.89
 
-vif(model.6) #GrLivArea, GarageCars, TotRmsAbvGrd  are over 4, 
+#difference 7 from 5 GrLivArea, TotalBsmtSF, YearRemodAdd, GarageArea, TotRmsAbvGrd, OpenPorchSF, BsmtHalfBath
+#diffrence 5 from 7  LotFrontage, BsmtFullBath, X2ndFlrSF, X1stFlrSF, PoolArea, WoodDeckSF
 
 # best model so far but includes some categorical values, so we alternate to the model 8
 model.7 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
@@ -77,12 +101,40 @@ AIC(model.7) #26834
 vif(model.7) #all under 3.53
 summary(model.7) # BsmtHalfBath, OpenPorchSF, TotalBsmtSF are not significant. Anyways, model is flawed because of categorical vars e.g. MSSubClass
 
-model.8 = lm(SalePrice ~  GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
-               AgeRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
-               BedroomAbvGr +  MSSubClass + AgeBuilt  + OpenPorchSF +
-               ScreenPorch + BsmtFullBath, data = na.omit(train_numVar))
-AIC(model.8) #27040
-summary(model.8) #BsmtFinSF1, OpenPorchSF are not statistically significant
+# mutual features between model 5 and 7
+model.7a = lm(SalePrice ~ OverallQual + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea +
+                BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + ScreenPorch, data = na.omit(train_numVar))
+
+vif(model.7a)
+AIC(model.7a) #27028.79
+
+# adding some features from the difference (YearRemodAdd, BsmtFullBath, PoolArea, X2ndFlrSF, X1stFlrSF, 
+#OverallCond, WoodDeckSF  additionally Fireplaces
+model.7b = lm(SalePrice ~ OverallQual + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+                BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
+                PoolArea + YearRemodAdd + ScreenPorch + X2ndFlrSF + X1stFlrSF + 
+                OverallCond + WoodDeckSF + Fireplaces, data = na.omit(train_numVar))
+
+vif(model.7b) # no colliniearity
+AIC(model.7b) #26781.16
+
+# decided that the model includes some categorical variables like OverallQual, OverallCond. so now extracting those
+model.8 = lm(SalePrice ~ BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+                BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
+                PoolArea + YearRemodAdd + ScreenPorch + X2ndFlrSF + X1stFlrSF + 
+                WoodDeckSF + Fireplaces, data = na.omit(train_numVar))
+vif(model.8)
+AIC(model.8) #26980.15 - AIC has increased as expected, but still pretty good
+
+#this model matches with the model was discussed with marius
+
+#Changing GrLivArea with X2ndFlrSF and X1stFlrSF and adding TotRmsAbvGrd 
+model.8a = lm(SalePrice ~ GrLivArea + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+               BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
+               PoolArea + YearRemodAdd + ScreenPorch + 
+               WoodDeckSF + Fireplaces, data = na.omit(train_numVar))
+vif(model.8a)
+AIC(model.8a) #26978.12 the result is so close with the one above
 
 
 model.9 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + TotalBsmtSF + WoodDeckSF +
@@ -94,6 +146,9 @@ vif(model.9) # all VIFs<5, highest VIF=4.18 (TotalBsmstSF)
 summary(model.9) # all are statistically significant, BsmtFinSF1 marginally so
 
 # so here we attempt to eliminate TotalBsmstSF, because previously we got highest VIF on it
+#marius & bircan
+  
+# the model was decided the best with marius on Friday seems matched with my updated seperate features.
 model.11 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
                AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr +
@@ -101,6 +156,7 @@ model.11 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
 AIC(model.11) #26980
 vif(model.11) # all under 2.74
 summary(model.11) # all are statistically significant, BsmtFinSF1 is **-signficant from marginally significant, so it was pushed into insignificance by TotalBsmtSF
+#Adjusted R-squared:  0.7631
 influencePlot(model.11)
 avPlots(model.11)
 confint(model.11)
@@ -132,69 +188,57 @@ cor(train_numVar$SalePrice, train_numVar$MSSubClass) #-0.084, not surprisingly w
 # 190	2 FAMILY CONVERSION - ALL STYLES AND AGES
 
 #Added BsmtUnfSF but that introduced some collinearity with BsmtFinSF1. Better AIC but multicolliniarity
+
+
+# adding BsmtUnfSF features
 model.12 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
                 AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                 MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
                 ScreenPorch + BsmtFullBath + Fireplaces + PoolArea,  data = na.omit(train_numVar))
+vif(model.12) # multicolliniearity X1stFlrSF, BsmtFinSF1
+AIC(model.12) #26973.98 - better AIC
+summary(model.12) #Adjusted R-squared:  0.7646
 
-vif(model.12)
-AIC(model.12) #26973
 
+#extracting BsmtUnfSF and adding Full Bath
 model.13 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
-  Age RemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-  MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
-  ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
-
-vif(model.13)
-AIC(model.13) #26968.63
-
-
-
-model.14 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
                 YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-                MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
+                MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr +
                 ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+vif(model.13) # no colliniearity
+AIC(model.13) #26974.69
+summary(model.13) #Adjusted R-squared:  0.7644
 
-vif(model.14)
+
+#adding BsmtUnfSF again
+model.14 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+              YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+              MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
+              ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+vif(model.14) # multicolliniearity X1stFlrSF, BsmtFinSF1
 AIC(model.14) #26968.63
- 
+summary(model.14) #Adjusted R-squared:  0.7659
+
+
+#switching  BsmtUnfSF  to BsmtFinSF2
 model.15 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
                 YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                 MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + 
                 ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+vif(model.15) #no multicolliniearity
+AIC(model.15) #26976.68
+summary(model.15) #Adjusted R-squared:  0.7642
 
 
-vif(model.15)
-AIC(model.15) #26968.63
 
-model.16 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
-                YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-                MSSubClass + YearBuilt + BedroomAbvGr + BsmtUnfSF +
-                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
+#Conclusion :  the model.11 to model.15 have very close results. at this moment we want the one has least colliniearity, AIC and 
+#more features (?) which is model.13
 
-vif(model.16)
-AIC(model.16) #26968.63
+influencePlot(model)
+avPlots(model)
+confint(model)
 
 
-#testing GarageCars vs GarageArea
-model.10 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + TotalBsmtSF + WoodDeckSF +
-               YearRemodAdd + LotArea + GarageCars + MasVnrArea + 
-               MSSubClass + YearBuilt + X1stFlrSF + 
-               ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = na.omit(train_numVar))
-
-summary(model.10)
-
-model.10a = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + TotalBsmtSF + WoodDeckSF +
-               YearRemodAdd + LotArea + GarageArea + MasVnrArea + 
-               MSSubClass + YearBuilt + X1stFlrSF + 
-               ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = na.omit(train_numVar))
-summary(model.10a)
-
-
-# Best predictors from forward AIC (Marius):
-bestFwdAIC = c("GarageCars", "X1stFlrSF", "X2ndFlrSF", "AgeBuilt", "KitchenAbvGr", "BsmtFinSF1", "AgeRemodAdd", "MasVnrArea", 
-               "Fireplaces", "BedroomAbvGr", "TotRmsAbvGrd",  "LotArea", "ScreenPorch", "BsmtUnfSF", "BsmtFullBath", "PoolArea", 
-               "WoodDeckSF", "FullBath", "BsmtFinSF2") 
 
 
 # AIC(model.1) #26789.4
@@ -222,3 +266,4 @@ bestFwdAIC = c("GarageCars", "X1stFlrSF", "X2ndFlrSF", "AgeBuilt", "KitchenAbvGr
 # confint(model.7) # 97.5% confidence
 # 
 # summary(model.8)
+
