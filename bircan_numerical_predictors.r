@@ -1,19 +1,31 @@
 library(MASS) 
 library(car)
 library(psych)
-train = read.csv('./data/train.csv') 
-
+#train = read.csv('./data/train.csv') 
+train = read.csv('train.csv')
 
 
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
 numericVarNames <- names(numericVars) #saving names vector for use later
 train_numVar <- train[, numericVars]
 
+# How many rows are we left with after na.omit()
+train_na_free = na.omit(train_numVar)
+print(nrow(train_numVar))          #1460 rows
+print(nrow(train_na_free))  #1121 rows
 
-model.1 = lm(SalePrice ~ ., data = na.omit(train_numVar))
-summary(model.1)
-vif(model.1)
-alias(model.1)
+
+# replace YearBuilt, YearRemodAdd, GarageYrBlt by AgeBuilt, AgeRemodAdd, AgeGarageBlt respectively
+train_numVar$AgeBuilt     = 2018 - train$YearBuilt
+train_numVar$AgeRemodAdd  = 2018 - train$YearRemodAdd
+train_numVar$AgeGarageBlt = 2018 - train$GarageYrBlt
+
+
+# ALIASED!
+# model.1 = lm(SalePrice ~ ., data = na.omit(train_numVar))
+# summary(model.1)
+# vif(model.1)
+# alias(model.1)
 
 
 model.2 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
@@ -40,13 +52,13 @@ model.4 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + Over
 vif(model.4)
 
 
-#marius' model
-model.5 = lm(SalePrice ~ GrLivArea + GarageArea + TotalBsmtSF + X1stFlrSF + MasVnrArea + 
-               BsmtFinSF1 + WoodDeckSF + LotFrontage + X2ndFlrSF + OpenPorchSF + LotArea + 
-               BsmtUnfSF + PoolArea  + X3SsnPorch + LowQualFinSF + BsmtFinSF2, data = na.omit(train_numVar))
-
-vif(model.5) #Error in vif.default(model.5) : there are aliased coefficients in the model
-alias(model.5)
+# #marius' model
+# model.5 = lm(SalePrice ~ GrLivArea + GarageArea + TotalBsmtSF + X1stFlrSF + MasVnrArea + 
+#                BsmtFinSF1 + WoodDeckSF + LotFrontage + X2ndFlrSF + OpenPorchSF + LotArea + 
+#                BsmtUnfSF + PoolArea  + X3SsnPorch + LowQualFinSF + BsmtFinSF2, data = na.omit(train_numVar))
+# 
+# vif(model.5) #Error in vif.default(model.5) : there are aliased coefficients in the model
+# alias(model.5)
 
 #The model was found based on AIC 
 model.6 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
@@ -56,54 +68,81 @@ model.6 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF +
 
 vif(model.6) #GrLivArea, GarageCars, TotRmsAbvGrd  are over 4, 
 
-# best model so far but includes some categorical values, so we alterate to the model 8
+# best model so far but includes some categorical values, so we alternate to the model 8
 model.7 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
-               YearRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
-               BedroomAbvGr +  MSSubClass + YearBuilt + OverallCond + OpenPorchSF +
+               AgeRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
+               BedroomAbvGr +  MSSubClass + AgeBuilt + OverallCond + OpenPorchSF +
                ScreenPorch + BsmtHalfBath, data = na.omit(train_numVar))
-
-vif(model.7)
+AIC(model.7) #26834
+vif(model.7) #all under 3.53
+summary(model.7) # BsmtHalfBath, OpenPorchSF, TotalBsmtSF are not significant. Anyways, model is flawed because of categorical vars e.g. MSSubClass
 
 model.8 = lm(SalePrice ~  GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
-               YearRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
-               BedroomAbvGr +  MSSubClass + YearBuilt  + OpenPorchSF +
+               AgeRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
+               BedroomAbvGr +  MSSubClass + AgeBuilt  + OpenPorchSF +
                ScreenPorch + BsmtFullBath, data = na.omit(train_numVar))
 AIC(model.8) #27040
-summary(model.8)
+summary(model.8) #BsmtFinSF1, OpenPorchSF are not statistically significant
 
 
 model.9 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + TotalBsmtSF + WoodDeckSF +
-               YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-                 MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr +
+               AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                 MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr +
                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = na.omit(train_numVar))
 AIC(model.9) #26972
+vif(model.9) # all VIFs<5, highest VIF=4.18 (TotalBsmstSF)
+summary(model.9) # all are statistically significant, BsmtFinSF1 marginally so
 
-
+# so here we attempt to eliminate TotalBsmstSF, because previously we got highest VIF on it
 model.11 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
-               YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-               MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr +
+               AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+               MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr +
                ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = na.omit(train_numVar))
 AIC(model.11) #26980
-
-vif(model.11)
-summary(model.11)
+vif(model.11) # all under 2.74
+summary(model.11) # all are statistically significant, BsmtFinSF1 is **-signficant from marginally significant, so it was pushed into insignificance by TotalBsmtSF
 influencePlot(model.11)
 avPlots(model.11)
 confint(model.11)
 
+# Since we left MSSubClass in, I wonder how strongly is it correlated with SalePrice
+cor(train_numVar$SalePrice, train_numVar$MSSubClass) #-0.084, not surprisingly weakly correlated
+#                Estimate Std. Error t value Pr(>|t|)    
+# MSSubClass   -1.575e+02  3.475e+01  -4.533 6.46e-06 ***
+# Notice that MSSubClass was highly significant. So a randomly coded categorical variables is highly signficant. 
+# What's going on in here ?
+# From the description, we see MSSubClass coding may be aligned (correlated) with the number of floors, and that's a feature weakly correlated with anything else.
+# So my guess is that it is adding an orthogonal component to the Span(X), so it must increase R^2 and reduce AIC.
+# MSSubClass: Identifies the type of dwelling involved in the sale.
+# 20	1-STORY 1946 & NEWER ALL STYLES
+# 30	1-STORY 1945 & OLDER
+# 40	1-STORY W/FINISHED ATTIC ALL AGES
+# 45	1-1/2 STORY - UNFINISHED ALL AGES
+# 50	1-1/2 STORY FINISHED ALL AGES
+# 60	2-STORY 1946 & NEWER
+# 70	2-STORY 1945 & OLDER
+# 75	2-1/2 STORY ALL AGES
+# 80	SPLIT OR MULTI-LEVEL
+# 85	SPLIT FOYER
+# 90	DUPLEX - ALL STYLES AND AGES
+# 120	1-STORY PUD (Planned Unit Development) - 1946 & NEWER
+# 150	1-1/2 STORY PUD - ALL AGES
+# 160	2-STORY PUD - 1946 & NEWER
+# 180	PUD - MULTILEVEL - INCL SPLIT LEV/FOYER
+# 190	2 FAMILY CONVERSION - ALL STYLES AND AGES
 
-#better AIC but multicolliniarity
+#Added BsmtUnfSF but that introduced some collinearity with BsmtFinSF1. Better AIC but multicolliniarity
 model.12 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
-                YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-                MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
+                AgeRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+                MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
                 ScreenPorch + BsmtFullBath + Fireplaces + PoolArea,  data = na.omit(train_numVar))
 
 vif(model.12)
-AIC(model.12)
+AIC(model.12) #26973
 
 model.13 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
-YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-  MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
+  Age RemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
+  MSSubClass + AgeBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
   ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
 
 vif(model.13)
@@ -152,7 +191,10 @@ model.10a = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + TotalBsmtSF + WoodDeckSF +
 summary(model.10a)
 
 
-
+# Best predictors from forward AIC (Marius):
+bestFwdAIC = c("GarageCars", "X1stFlrSF", "X2ndFlrSF", "AgeBuilt", "KitchenAbvGr", "BsmtFinSF1", "AgeRemodAdd", "MasVnrArea", 
+               "Fireplaces", "BedroomAbvGr", "TotRmsAbvGrd",  "LotArea", "ScreenPorch", "BsmtUnfSF", "BsmtFullBath", "PoolArea", 
+               "WoodDeckSF", "FullBath", "BsmtFinSF2") 
 
 
 # AIC(model.1) #26789.4
