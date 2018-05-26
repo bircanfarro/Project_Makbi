@@ -45,19 +45,43 @@ corrplot(cor_numVar, method = "color")
 ```
 
 Let's now try to order our variables in the order of the t-stats of univariate regressions. 
+The problem with this approach is that we'd have not defence to multi-collinearity. 
 ```{r}
+
+
+# replace YearBuilt, YearRemodAdd, GarageYrBlt by AgeBuilt, AgeRemodAdd, AgeGarageBlt respectively
+train$AgeBuilt     = 2018 - train$YearBuilt
+train$AgeRemodAdd  = 2018 - train$YearRemodAdd
+train$AgeGarageBlt = 2018 - train$GarageYrBlt
+train$YearBuilt    = NULL
+train$YearRemodAdd = NULL
+train$GarageYrBlt  = NULL
+
 numericVars = which(sapply(train, is.numeric)) #index vector numeric variables
 numericVarNames = names(numericVars) #saving names vector for use later
 
+# Collinearities and High Correlations
+# 1. GrLivArea = X1stFlrSF + X2ndFlrSF
+# 2. BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF = TotalBsmtSF
+# 3. cor(TotalBsmtSF, X1stFlrSF) = 0.82, so eliminate one?
+# 4. cor(GarageArea, GarageCars) = 0.88, so eliminatte one? Bircan did two regressions and found GarageCars is marginally better. 
+
 # I eliminate some categorical numerical columns (categories coded as numbers)
 # manually here. But I need to write some smarter code to eliminate them 
-# automatically
+# automatically. 
 numericVarNames = numericVarNames[!numericVarNames %in% 
-                c("Id", "SalePrice", "OverallQual", "GarageCars", 
-                  "YearBuilt", "YearRemodAdd", "GarageYrBlt", 
-                  "Fireplaces", "FullBath", "MSSubClass", 
-                  "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr", 
-                  "EnclosedPorch", "ScreenPorch", "OverallCond", "TotRmsAbvGrd", 
+                c("Id", "SalePrice", "OverallQual", 
+                  "GarageArea", # "GarageCars", # we think GarageCars is more significant than GarageArea
+                  # "YearBuilt", "YearRemodAdd", "GarageYrBlt", # keep these as numerical vars influencing the price
+                  # "Fireplaces", "FullBath",  # keep counts: if you add one more bathroom, you can make that much more in sale price
+                  "MSSubClass",   # categorical
+                  # "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr",  # keep counts
+                  # "EnclosedPorch",  # square footage variable, include it
+                  # "ScreenPorch", # screen porch area in sq feet, include it
+                  "OverallCond",
+                  "GrLivArea", # eliminated because collinearity GrLivArea = X1stFlrSF + X2ndFlrSF
+                  "TotalBsmtSF", # eliminated because collinearity BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF = TotalBsmtSF
+                  # "TotRmsAbvGrd", # count of rooms, include 
                   "MoSold", "YrSold", "MiscVal")] 
 
 #MiscVal and MiscFeature: value of misc feature, but this is odd: "elevator" etc. Hard to predict, eliminate it ???
@@ -78,9 +102,8 @@ bestPredictors = bestPredictors[order(bestPredictors$pval),]
 print(bestPredictors)
 ```
 
-So the 16 predictors based on order of univariate t-vals are
+So the 27 predictors based on order of univariate t-vals are
 ```{r}
-
 print(bestPredictors$name)
 ```
 
@@ -91,15 +114,23 @@ library(car)
 numericVars = which(sapply(train, is.numeric)) #index vector numeric variables
 numericVarNames = names(numericVars) #saving names vector for use later
 
+
 # I eliminate some categorical numerical columns (categories coded as numbers)
 # manually here. But I need to write some smarter code to eliminate them 
-# automatically
+# automatically. 
 numericVarNames = numericVarNames[!numericVarNames %in% 
-                c("Id", "SalePrice", "OverallQual", "GarageCars", 
-                  "YearBuilt", "YearRemodAdd", "GarageYrBlt", 
-                  "Fireplaces", "FullBath", "MSSubClass", 
-                  "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr", 
-                  "EnclosedPorch", "ScreenPorch", "OverallCond", "TotRmsAbvGrd", 
+                c("Id", "SalePrice", "OverallQual", 
+                  "GarageArea", # "GarageCars", # we think GarageCars is more significant than GarageArea
+                  # "YearBuilt", "YearRemodAdd", "GarageYrBlt", # keep these as numerical vars influencing the price
+                  # "Fireplaces", "FullBath",  # keep counts: if you add one more bathroom, you can make that much more in sale price
+                  "MSSubClass",   # categorical
+                  # "HalfBath", "BsmtFullBath", "BsmtHalfBath", "KitchenAbvGr", "BedroomAbvGr",  # keep counts
+                  # "EnclosedPorch",  # square footage variable, include it
+                  # "ScreenPorch", # screen porch area in sq feet, include it
+                  "OverallCond",
+                  "GrLivArea", # eliminated because collinearity GrLivArea = X1stFlrSF + X2ndFlrSF
+                  "TotalBsmtSF", # eliminated because collinearity BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF = TotalBsmtSF
+                  # "TotRmsAbvGrd", # count of rooms, include 
                   "MoSold", "YrSold", "MiscVal")] 
 
 train_numVar = na.omit(train[, c(numericVarNames, "SalePrice")])
@@ -122,9 +153,30 @@ commonPredictors = intersect(bestAICPredictorNames, bestTVALPredictorNames) # st
 print(commonPredictors)
 ```
 
+Best TVAL AIC predictors: 
+```{r}
+print(bestTVALPredictorNames)
+```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+Best forward AIC predictors:
+```{r}
+print(length(bestAICPredictorNames))
+print(bestAICPredictorNames)
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+Does TVAL include AIC variables:
+```{r}
+print(setdiff(bestTVALPredictorNames, bestAICPredictorNames ))
+print(setdiff(bestAICPredictorNames, bestTVALPredictorNames)) # zero, so TVAL includes AIC
+```
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Why are some variables in my approach eliminated in the AIC approach ? Because they introduced collinearities
+```{r}
+notAICPredictors = setdiff(bestTVALPredictorNames, bestAICPredictorNames)
+print(notAICPredictors)
+```
+
+
+I gave my forward AIC set to Bircan, who found that I have 5 extra variables that she does not have. She then added each variable incrementally to her best model, and found that for some of the variables, she gets better AIC values than what she saw before. 
+
+Bircan pushed her code, so the best model is one arising from her best model + some of my variables. Clean up a bit and decide ?
