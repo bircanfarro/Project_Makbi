@@ -17,6 +17,102 @@ train = df
 
 ```
 
+We need to do more cleaning and imputation: 
+```{r}
+library(VIM) #For the visualization and imputation of missing values.
+
+VIM::aggr(train) #A graphical interpretation of the missing values and their
+            #combinations within the dataset.
+```
+
+```{r}
+# reproduce proportion of missing
+myNa = is.na(train)
+pNA = apply(myNa, 2, sum)/nrow(myNa) # sum along cols
+barplot(pNA)
+pNA[order(pNA,decreasing=TRUE)]
+
+```
+
+We know a lot of the NA values occur in columns in which they are a legitimate level. 
+In those cases, replace the NA with None, since it is not really NA. 
+```{r}
+library(dplyr)
+df = read.csv('train.csv', stringsAsFactors = FALSE)
+train = df
+train$PoolQC[is.na(train$PoolQC)]             = 'None'
+train$PoolArea[is.na(train$PoolQC)]           = 0
+train$MiscFeature[is.na(train$MiscFeature)]   = 'None'
+train$Alley[is.na(train$Alley)]               = 'None'
+train$Fence[is.na(train$Fence)]               = 'None'
+train$FireplaceQu[is.na(train$FireplaceQu)]   = 'None'
+train$GarageType[is.na(train$GarageType)]     = 'None'
+train$GarageFinish[is.na(train$GarageFinish)] = 'None'
+train$GarageQual[is.na(train$GarageQual)]     = 'None'
+train$GarageCond[is.na(train$GarageCond)]     = 'None'
+train$BsmtCond[is.na(train$BsmtCond)]         = 'None'
+train$BsmtQual[is.na(train$BsmtQual)]         = 'None'
+train$BsmtExposure[is.na(train$BsmtExposure)] = 'None'
+train$BsmtFinType1[is.na(train$BsmtFinType1)] = 'None'
+train$BsmtFinType2[is.na(train$BsmtFinType2)] = 'None'
+train$MasVnrType[is.na(train$MasVnrType)] = 'None' #assume missing means no veneer
+train$MasVnrArea[is.na(train$MasVnrArea)] = 0 # none in Veneer Type is always 0 in Veneer Area
+train$Electrical[is.na(train$Electrical)] = 'SBrkr' # missing is imputed as the majority class (majority by large margin)
+
+
+write.csv(train, file='train1.csv', row.names = FALSE)
+
+
+rm('df')
+rm('train')
+df = read.csv('train1.csv')
+train = df
+
+
+# reproduce proportion of missing
+myNa = is.na(train)
+pNA = apply(myNa, 2, sum)/nrow(myNa) # sum along cols
+barplot(pNA)
+pNA[order(pNA,decreasing=TRUE)]
+
+
+# Impute missing LotFrontage = median LotFrontage of same LotConfig, Neighborhood. 
+# This could still leave NA if there is no more data of the same LotConfig, Neighborhood. 
+# We can do a second pass where we impute the still-missing NA = median of LotFrontage of same LotConfig
+
+lconfig_neigh_median_lookup = train %>% 
+  group_by(LotConfig, Neighborhood) %>% 
+  summarise(x=median(LotFrontage,na.rm=TRUE))
+train = left_join(train, lconfig_neigh_median_lookup, by=c('LotConfig', 'Neighborhood'))
+train[is.na(train$LotFrontage), "LotFrontage"] = train[is.na(train$LotFrontage),"x"]
+train$x = NULL # drop the helper column "x"
+
+lconfig_median_lookup = train %>%
+  group_by(LotConfig)         %>%
+  summarise(x=median(LotFrontage, na.rm=TRUE))
+train = left_join(train, lconfig_median_lookup, by=c('LotConfig'))
+train[is.na(train$LotFrontage), "LotFrontage"] = train[is.na(train$LotFrontage),"x"]
+train$x = NULL
+
+write.csv(train, file='train_clean.csv', row.names = FALSE)
+
+# drop the only numerical colum in which we have legitimate NAs (when there is no garage).
+# I am dropping it to provide a totally-free of NAs dataset, for algorithms that choke on NA. 
+train$GarageYrBlt = NULL  
+write.csv(train, file='train_superclean.csv', row.names = FALSE)
+
+```
+
+Lot Frontage is missing values for all categories of LotConfiguation, i.e. "Inside" lots have Lot Frontage, as do "CuldSac" lots. I also see that Inside lots in Edwards neighborhood have median = 60, whereas CulDSac lots in Edwards have 35. From this (and the below), it is clear that lot frontage is determined by LotConfig and Neighborhood, that is why we impute it where missing as the median of rows of same LotConfig and Neighborhood. 
+```{r}
+train[train$LotConfig=='Inside', c("LotFrontage","Neighborhood")] %>% group_by(Neighborhood) %>% summarise(n=median(LotFrontage, na.rm=TRUE))
+```
+
+```{r}
+train[train$LotConfig=='CulDSac', c("LotFrontage","Neighborhood")] %>% group_by(Neighborhood) %>% summarise(n=median(LotFrontage, na.rm=TRUE))
+```
+
+
 Following is code to compute the correlation of all numerical columns. 
 
 ```{r}
