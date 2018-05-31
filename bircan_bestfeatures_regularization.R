@@ -3,11 +3,14 @@
     ########## NUMERIC FEATURES SELECTION  ############
     ###################################################
     
+    # NOTE : All the model's Y column has changed to log.SalePrice, therefore the previous commented values are no longer valid.
+    # if you want to see the results please run the code.
     
+    library(dplyr)
     library(car)
     library(psych)
     train = read.csv('./data/train_superclean.csv') 
-    
+    train = train %>% mutate(log.SalePrice = log(SalePrice))
     
     
     numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
@@ -20,7 +23,7 @@
     
     
     # creating full linear model and summarise to see the significance of each variables
-    model.1 = lm(SalePrice ~ ., data = data1)
+    model.1 = lm(log.SalePrice  ~ ., data = data1)
     summary(model.1)
     vif(model.1)
     alias(model.1)
@@ -28,17 +31,17 @@
     
     
     # Model formed with the only variables that has the highest significany
-    model.2 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.2 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                    YearBuilt + MasVnrArea + BsmtFinSF1 + X1stFlrSF + X2ndFlrSF + BsmtFullBath +
                    BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces +  GarageCars +
                    WoodDeckSF + ScreenPorch + PoolArea, data = data1)
     vif(model.2) #creates some colliniearity
     AIC(model.2) #26768.64 ,28531.87
-    
+    summary(model.2)
     
     
     # extract the variables that creates colliniearity
-    model.3 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.3 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
                    BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars + 
                    WoodDeckSF + ScreenPorch + PoolArea, data = data1)
@@ -48,7 +51,7 @@
     
     
     # adding X1stFlrSF that created multiclliniearity in model.2
-    model.4 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.4 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + 
                    BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
                    WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF, data = data1)
@@ -58,7 +61,7 @@
     
     
     # adding X1stFlrSF, X2ndFlrSF that created multiclliniearity in model.2
-    model.5 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.5 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                    BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
                    WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF, data = data1)
@@ -68,7 +71,7 @@
     
     
     # adding TotRmsAbvGrd that created multiclliniearity in model.2
-    model.6 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.6 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath +
                    BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars + TotRmsAbvGrd +
                    WoodDeckSF + ScreenPorch + PoolArea, data = data1)
@@ -78,7 +81,7 @@
     
     
     #The model was found based on AIC forward method
-    model.7 = lm(SalePrice ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
+    model.7 = lm(log.SalePrice  ~ OverallQual + GrLivArea + BsmtFinSF1 + TotalBsmtSF + 
                    YearRemodAdd + LotArea + GarageArea + KitchenAbvGr + MasVnrArea + 
                    BedroomAbvGr + TotRmsAbvGrd + MSSubClass + YearBuilt + OverallCond + 
                    GarageCars + OpenPorchSF + ScreenPorch + BsmtHalfBath, data = data1)
@@ -89,7 +92,7 @@
     #diffrence 5 from 7  LotFrontage, BsmtFullBath, X2ndFlrSF, X1stFlrSF, PoolArea, WoodDeckSF
     
     # mutual features between model 5 and 7
-    model.7a = lm(SalePrice ~ OverallQual + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea +
+    model.7a = lm(log.SalePrice  ~ OverallQual + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea +
                     BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + ScreenPorch, data = data1)
     
     vif(model.7a)
@@ -98,7 +101,7 @@
     
     # adding some features from the difference (YearRemodAdd, BsmtFullBath, PoolArea, X2ndFlrSF, X1stFlrSF, 
     #OverallCond, WoodDeckSF  additionally Fireplaces
-    model.7b = lm(SalePrice ~ OverallQual + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+    model.7b = lm(log.SalePrice  ~ OverallQual + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
                     BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
                     PoolArea + YearRemodAdd + ScreenPorch + X2ndFlrSF + X1stFlrSF + 
                     OverallCond + WoodDeckSF + Fireplaces, data = data1)
@@ -110,7 +113,7 @@
     
     
     # decided that the model includes some categorical variables like OverallQual, OverallCond. so now extracting those
-    model.8 = lm(SalePrice ~ BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+    model.8 = lm(log.SalePrice  ~ BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
                     BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
                     PoolArea + YearRemodAdd + ScreenPorch + X2ndFlrSF + X1stFlrSF + 
                     WoodDeckSF + Fireplaces, data = data1)
@@ -120,7 +123,7 @@
     #this model matches with the model was discussed with marius
     
     #Changing GrLivArea with X2ndFlrSF and X1stFlrSF and adding TotRmsAbvGrd 
-    model.8a = lm(SalePrice ~ GrLivArea + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
+    model.8a = lm(log.SalePrice  ~ GrLivArea + BsmtFinSF1 + LotArea + KitchenAbvGr + MasVnrArea + 
                    BedroomAbvGr + MSSubClass + YearBuilt + GarageCars + BsmtFullBath + 
                    PoolArea + YearRemodAdd + ScreenPorch + 
                    WoodDeckSF + Fireplaces, data = data1)
@@ -131,10 +134,10 @@
     #marius & bircan
       
     # the model was decided the best with marius on Friday seems matched with my updated seperate features.
-    model.11 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+    model.11 = lm(log.SalePrice  ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
                    YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                    MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr +
-                   ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = data1)
+                   ScreenPorch + BsmtFullBath + Fireplaces + PoolArea, data = train)
     vif(model.11)
     AIC(model.11) #26980.15
     summary(model.11) #Adjusted R-squared:  0.7631 
@@ -142,7 +145,7 @@
     
     
     # adding BsmtUnfSF features
-    model.12 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+    model.12 = lm(log.SalePrice  ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
                     YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                     MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
                     ScreenPorch + BsmtFullBath + Fireplaces + PoolArea,  data = data1)
@@ -154,7 +157,7 @@
     
     
     #extracting BsmtUnfSF and adding Full Bath
-    model.13 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+    model.13 = lm(log.SalePrice  ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
                     YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                     MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr +
                     ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = data1)
@@ -165,7 +168,7 @@
     
     
     #adding BsmtUnfSF again
-    model.14 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
+    model.14 = lm(log.SalePrice  ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF +
                   YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                   MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + BsmtUnfSF +
                   ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = data1)
@@ -176,7 +179,7 @@
     
     
     #switching  BsmtUnfSF  to BsmtFinSF2
-    model.15 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
+    model.15 = lm(log.SalePrice  ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
                     YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
                     MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + 
                     ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = data1)
@@ -195,84 +198,21 @@
     confint(model)
     
     
-    
-    
-    library(car)
-    library(psych)
-    train = read.csv('./data/train_superclean.csv') 
-    
-    
-    
-    sapply(train, class)
-    
-    
-    
+    ###################################################
+    #######  CATEGORICAL FEATURES SELECTION  ##########
+    ###################################################   
+
+
+
     categoricalVars <- which(sapply(train, is.factor))
     CategoricalVarNames <- names(categoricalVars)
     train_catVar <- train[, categoricalVars]
-    train_catVar = cbind(train_catVar, SalePrice = train$SalePrice)
+    train_catVar = cbind(train_catVar, log.SalePrice  = train$log.SalePrice )
     
+
     
-    # model.15 = lm(SalePrice ~  X2ndFlrSF +  BsmtFinSF1 + WoodDeckSF + BsmtFinSF2 +
-    #                 YearRemodAdd + LotArea + GarageCars + MasVnrArea + KitchenAbvGr +
-    #                 MSSubClass + YearBuilt + X1stFlrSF + BedroomAbvGr + 
-    #                 ScreenPorch + BsmtFullBath + Fireplaces + PoolArea + FullBath,  data = na.omit(train_numVar))
-    # 
-    # 
-    # 
-    # for (c in CategoricalVarNames)
-    # {
-    #   if ( is.factor(train2[[c]]) && length(levels(train2[[c]]))<2) print(c)
-    # }
-    # 
-    # 
-    # 
-    # 
-    # a = lm(SalePrice ~ HouseStyle + PavedDrive + Street, data = train)
-    # summary(a)
-    # 
-    # CategoricalVarNames 
-    # 
-    # 
-    # impute_levels = function(fac){
-    #   if (is.factor(fac))
-    #   {
-    #     if (length(levels(fac))<=2)
-    #     {print(fac)
-    #       return (as.numeric(fac)-1)}
-    #   }
-    #   return(fac)
-    # }
-    #  
-    #  for (i in CategoricalVarNames)
-    #  {
-    #    if (is.factor(train$i)) train$i.ct = C(train$i.f, treatment)
-    #  }
-    # 
-    # 
-    # 
-    # for (i in CategoricalVarNames)
-    # {
-    #   if (is.factor(train$i)) print(attributes(train$i.ct))
-    # }
-    # 
-    # 
-    # train1 <- within(train, {
-    #   HouseStyle.ct <- C(HouseStyle.f, treatment)
-    #   print(attributes(HouseStyle.ct))
-    # })
-    # 
-    # 
-    # m2 = lm(SalePrice ~ HouseStyle.ct,  data = train1)
-    # summary(m2)
-    
-    
-    
-    
-    
-    ######  MODEL FOR CATEGORICAL DATA ######
-    model.empty.cat = lm(SalePrice ~ 1, data = train_catVar) #The model with an intercept ONLY.
-    model.full.cat = lm(SalePrice ~ ., data = train_catVar) #The model with ALL variables.
+    model.empty.cat = lm(log.SalePrice  ~ 1, data = train_catVar) #The model with an intercept ONLY.
+    model.full.cat = lm(log.SalePrice  ~ ., data = train_catVar) #The model with ALL variables.
     scope = list(lower = formula(model.empty.cat), upper = formula(model.full.cat))
     
     
@@ -280,7 +220,7 @@
     forwardAICat = step(model.empty, scope, direction = "forward", k = 2)
     
     # Step:  AIC=30429.52
-    # SalePrice ~ Neighborhood + KitchenQual + BsmtQual + FireplaceQu + 
+    # log.SalePrice  ~ Neighborhood + KitchenQual + BsmtQual + FireplaceQu + 
     #   BldgType + BsmtExposure + HouseStyle + RoofMatl + ExterQual + 
     #   PoolQC + GarageFinish + Exterior1st + MasVnrType + Condition2 + 
     #   BsmtFinType1 + LotConfig + SaleCondition + RoofStyle + HeatingQC + 
@@ -293,7 +233,7 @@
     forwardBICat = step(model.empty, scope, direction = "forward", k = log(1460))
     
     # Step:  AIC=30969.78
-    # SalePrice ~ Neighborhood + KitchenQual + BsmtQual + FireplaceQu + 
+    # log.SalePrice  ~ Neighborhood + KitchenQual + BsmtQual + FireplaceQu + 
     #   BldgType + BsmtExposure + ExterQual + RoofMatl + PoolQC + 
     #   HouseStyle + GarageFinish + CentralAir
     
@@ -306,18 +246,13 @@
     summary(train_catVar)
     
     
-    
-    ###################################################
-    #######  CATEGORICAL FEATURES SELECTION  ##########
-    ###################################################
-    
     # less important ; Alley + MSZoning, LotShape , MasVnrType,
     # unneceseray variables :Condition2 + LotConfig + HeatingQC , Heating , Condition1, SaleType, 
     # variables that creates multicolliniearity:
     # Neighborhood, BsmtQual, BsmtFinType1, RoofStyle , GarageQual, GarageCond 
     
     # baseline is BIC >> adding features one by one from AIC model to find the best predictors
-    model.0 = lm(SalePrice ~  KitchenQual +  FireplaceQu + 
+    model.0 = lm(log.SalePrice  ~  KitchenQual +  FireplaceQu + 
                    BldgType + BsmtExposure + ExterQual + RoofMatl + PoolQC + 
                    HouseStyle + GarageFinish + CentralAir , data = train_catVar)
     
@@ -326,7 +261,8 @@
     AIC(model.0) # 35254.86
     
     
-    model.1 = lm(SalePrice ~  KitchenQual +  FireplaceQu + SaleCondition +
+    # +  SaleCondition
+    model.1 = lm(log.SalePrice  ~  KitchenQual +  FireplaceQu + SaleCondition +
                    BldgType + BsmtExposure + ExterQual + RoofMatl + PoolQC + 
                    HouseStyle + GarageFinish + CentralAir , data = train_catVar)
     
@@ -335,8 +271,8 @@
     AIC(model.1) # 35230.71
     
     
-    
-    model.2 = lm(SalePrice ~  KitchenQual +  FireplaceQu +  Utilities + 
+    # +  Utilities
+    model.2 = lm(log.SalePrice  ~  KitchenQual +  FireplaceQu +  Utilities + 
                    BldgType + BsmtExposure + ExterQual + RoofMatl + PoolQC + 
                    HouseStyle + GarageFinish + CentralAir , data = train_catVar)
     
@@ -346,18 +282,18 @@
     
     
     
-    model.3 = lm(SalePrice ~  KitchenQual +  FireplaceQu +  Utilities + Alley + MSZoning + 
+    model.3 = lm(log.SalePrice  ~  KitchenQual +  FireplaceQu + MSZoning + 
                    LotShape + MasVnrType + BldgType + BsmtExposure + ExterQual + RoofMatl + PoolQC + 
                    HouseStyle + GarageFinish + CentralAir , data = train_catVar)
     
-    summary(model.3) #Adjusted R-squared:  0.7406, F-statistic: 79.6
+    summary(model.3) #Adjusted R-squared: 0.7408 , F-statistic: 84.4
     vif(model.3)
-    AIC(model.3) # 35173.91
+    AIC(model.3) # 35169.91
     
     
     
     #based on p values
-    model.4 = lm(SalePrice ~  MSZoning + LotConfig + BldgType + HouseStyle + RoofMatl + 
+    model.4 = lm(log.SalePrice  ~  MSZoning + LotConfig + BldgType + HouseStyle + RoofMatl + 
                    ExterQual  + BsmtExposure + KitchenQual +   
                    GarageFinish + CentralAir , data = train_catVar)
     
@@ -367,18 +303,18 @@
     
     
     
-    model.5 = lm(SalePrice ~  KitchenQual +  FireplaceQu +  Utilities + Alley + MSZoning + 
+    model.5 = lm(log.SalePrice  ~  KitchenQual +  FireplaceQu + MSZoning + LotConfig + ExterQual +
                    LotShape + MasVnrType + BldgType + BsmtExposure + RoofMatl + PoolQC + 
                    HouseStyle + GarageFinish + CentralAir , data = train_catVar)
     
-    summary(model.5) #Adjusted R-squared:  0.7093 F-statistic:  72.21
-    vif(model.5) # best
-    AIC(model.5)  # 35337.21
+    summary(model.5) #Adjusted R-squared:  0.7432  F-statistic:  71.67
+    vif(model.5) # KitchenQual 
+    AIC(model.5)  # 35160.44
     
     
     
-    model.6 = lm(SalePrice ~  ExterQual +  FireplaceQu +  Utilities + Alley + MSZoning + 
-                   LotShape + MasVnrType + BldgType + BsmtExposure + RoofMatl + PoolQC + 
+    model.6 = lm(log.SalePrice  ~  ExterQual +  FireplaceQu +  Utilities + Alley + MSZoning + 
+                   MasVnrType + BldgType + BsmtExposure + RoofMatl + PoolQC + 
                    HouseStyle + GarageFinish + CentralAir , data = train_catVar)
     
     summary(model.6) #Adjusted R-squared:  0.7119 F-statistic:  73.1 
@@ -392,7 +328,7 @@
     #########################################
     
     
-    model.n = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.n = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                    BedroomAbvGr + KitchenAbvGr + Fireplaces +  GarageCars +
                    WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF +
@@ -403,8 +339,10 @@
     vif(model.n) # PoolQC , BldgType, PoolArea,MSSubClass, X2ndFlrSF , Fireplaces , FireplaceQu, RoofMatl 
     AIC(model.n) #34156.28
     
+   
+    
     # Step:  AIC=29401.39
-    # SalePrice ~ OverallQual  
+    # log.SalePrice  ~ OverallQual  
     #   RoofMatl + BsmtFinSF1 + MSSubClass + BsmtExposure + KitchenQual + 
     #   Condition2 + SaleCondition + OverallCond + YearBuilt + LotArea + 
     #   PoolQC + ExterQual + GarageArea + TotalBsmtSF + BldgType + 
@@ -420,7 +358,7 @@
     # variables that creates multicolliniearity:
     # Neighborhood, BsmtQual, BsmtFinType1, RoofStyle , GarageQual, GarageCond 
     
-    model.n1 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    model.n1 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
                     YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                     BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Exterior1st +
                     WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual +
@@ -432,15 +370,15 @@
     AIC(model.n1) # 34094.42
     
     # Step:  BIC=29907.7
-    # SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtQual + 
+    # log.SalePrice  ~ OverallQual + GrLivArea + Neighborhood + BsmtQual + 
     #   RoofMatl + BsmtFinSF1 + MSSubClass + BsmtExposure + KitchenQual + 
     #   Condition2 + OverallCond + YearBuilt + LotArea + GarageArea + 
     #   TotalBsmtSF + PoolArea + ExterQual + SaleCondition + KitchenAbvGr + 
     #   X2ndFlrSF + BedroomAbvGr + PoolQC + ScreenPorch + TotRmsAbvGrd + 
     #   MasVnrArea + Street + X1stFlrSF
     
-    model.n2 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
-                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
+    model.n2 = lm(log.SalePrice  ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + 
                     BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Condition2 +
                     WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
                     Utilities +  MSZoning  + SaleCondition + Functional + Street + GarageQual +  
@@ -451,20 +389,36 @@
     AIC(model.n2) # 33919.4
     
     
-    model.n3 = lm(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
-                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
+ 
+    
+    model.n3 = lm(log.SalePrice  ~ OverallQual  + LotArea + LotFrontage + OverallCond +
+                    MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + FullBath +
                     BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Condition2 +
-                    WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
-                    Utilities +  MSZoning  + SaleCondition + Functional + Street + GarageQual +  
+                    WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + 
+                    MSZoning  + SaleCondition + Functional + GarageQual +  LotConfig + 
                     MasVnrType + BsmtExposure + RoofMatl + YearRemodAdd + Fence + MoSold +
                     CentralAir, data = train)
-    summary(model.n3) #Adjusted R-squared:  0.8925 , F-statistic: 141.8
+    summary(model.n3) #Adjusted R-squared:  0.8950 , F-statistic: 156.5
     vif(model.n3) # GarageFinish YearBuilt 
-    AIC(model.n3) # 33919.4
+    AIC(model.n3) # 33937.89
     
     
     
-    model.n4 = lm(SalePrice ~ OverallQual + HouseStyle + LotArea + LotFrontage + OverallCond +
+    model.n3a = lm(log.SalePrice  ~ OverallQual  + LotArea + LotFrontage + OverallCond + MasVnrType + Condition2 +
+                    YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + RoofMatl + BsmtExposure  + FullBath +
+                    BedroomAbvGr + KitchenAbvGr + GarageCars + KitchenQual+ MSZoning + GarageFinish + SaleCondition +
+                    WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + Fence +  Utilities + FireplaceQu + CentralAir + MoSold,
+                    data = train)
+    
+    summary(model.n3a) #Adjusted R-squared:  0.8737 , F-statistic: 141.8
+    vif(model.n3a) # GarageFinish YearBuilt 
+    AIC(model.n3a) # 34115
+    
+    
+    
+    
+    
+    model.n4 = lm(log.SalePrice  ~ OverallQual + LotArea + LotFrontage + OverallCond +
                     YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                     BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Condition2 +
                     WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
@@ -478,7 +432,7 @@
     
     
     #checking the OverQual as numeric and OverallQualCategorical as factor, 
-    model.n5 = lm(SalePrice ~ OverallQualCategorical + HouseStyle + LotArea + LotFrontage + OverallCond +
+    model.n5 = lm(log(log.SalePrice ) ~ OverallQualCategorical + HouseStyle + LotArea + LotFrontage + OverallCond +
                     YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                     BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Condition2 +
                     WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
@@ -490,55 +444,24 @@
     AIC(model.n5) # 33941.43
     
     
+    #MSE
+    mean(abs(predict(model.n4) - train$log.SalePrice)) #0.08010317
+    
+    sum((predict(model.n4) - train$log.SalePrice)^2 / length(train$log.SalePrice)) #0.01298258
+    
     
     # less important ; Alley + MSZoning, LotShape , MasVnrType,
     #unneceseray variables :Condition2 + LotConfig + HeatingQC , Heating , Condition1, SaleType, 
     # variables that creates multicolliniearity:
     # Neighborhood, BsmtQual, BsmtFinType1, RoofStyle , GarageQual, GarageCond 
     
-    ######  MODEL FOR FULL TRAIN DATA ######
-    model.empty = lm(SalePrice ~ 1, data = train) #The model with an intercept ONLY.
-    model.full = lm(SalePrice ~ ., data = train) #The model with ALL variables.
+    
+
+    model.empty = lm(log.SalePrice  ~ 1, data = train) #The model with an intercept ONLY.
+    model.full = lm(log.SalePrice  ~ ., data = train) #The model with ALL variables.
     scope = list(lower = formula(model.empty), upper = formula(model.full))
     
-    
-    library(MASS) 
-    
-    #Forward AIC for the entire data
-    forwardAIC = step(model.empty, scope, direction = "forward", k = 2)
-    
-    
-    # Step:  AIC=29401.39
-    # SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtQual + 
-    #   RoofMatl + BsmtFinSF1 + MSSubClass + BsmtExposure + KitchenQual + 
-    #   Condition2 + SaleCondition + OverallCond + YearBuilt + LotArea + 
-    #   PoolQC + ExterQual + GarageArea + TotalBsmtSF + BldgType + 
-    #   Functional + BedroomAbvGr + Condition1 + PoolArea + ScreenPorch + 
-    #   LowQualFinSF + LandContour + Street + LandSlope + KitchenAbvGr + 
-    #   GarageFinish + MasVnrArea + Exterior1st + TotRmsAbvGrd + 
-    #   LotConfig + MSZoning + GarageCars + Fireplaces + YearRemodAdd + 
-    #   GarageQual + GarageCond + WoodDeckSF + BsmtFullBath + X1stFlrSF + 
-    #   Fence + MoSold
-    
-    
-    #Forward BIC for the entire data
-    forwardBIC = step(model.empty, scope, direction = "forward", k = log(1460))
-    
-    # Step:  AIC=29907.7
-    # SalePrice ~ OverallQual + GrLivArea + Neighborhood + BsmtQual + 
-    #   RoofMatl + BsmtFinSF1 + MSSubClass + BsmtExposure + KitchenQual + 
-    #   Condition2 + OverallCond + YearBuilt + LotArea + GarageArea + 
-    #   TotalBsmtSF + PoolArea + ExterQual + SaleCondition + KitchenAbvGr + 
-    #   X2ndFlrSF + BedroomAbvGr + PoolQC + ScreenPorch + TotRmsAbvGrd + 
-    #   MasVnrArea + Street + X1stFlrSF
-    
-    
-    summary(forwardAIC) # adj R^2 0.919 F~117, AIC = 34574.82
-    summary(forwardBIC) # adj R^2 0.911 F~192, AIC = 34750.33
-    vif(forwardBIC)
-    
-    
-    
+
     
     ###################################################
     ###### REGULARIZATION AND CROSS  VALIDATION #######
@@ -546,63 +469,68 @@
     
     library(ISLR)
     library(glmnet)
-    train = read.csv('./data/train_superclean.csv') 
-    
     
     
     #####Ridge Regression#####
     # 
-    # x = model.matrix(SalePrice ~ ., train)[, -1] #Dropping the intercept column.
-    # y = train$SalePrice
+    # x = model.matrix(log.SalePrice  ~ ., train)[, -1] #Dropping the intercept column.
+    # y = train$log.SalePrice 
     # 
     # grid = 10^seq(5, -2, length = 100)
     # 
     # ridge_model = glmnet(x, y, alpha = 0, lambda = grid)
     # plot(ridge_model, xvar = "lambda", label = TRUE, main = "Ridge Regression")
-    
+   
+     
     
     #Creating training and testing sets with 70-30 split 
-    
     set.seed(0)
     train_train_idx = sample(1:nrow(train), 7*nrow(train)/10)
     train_train = train[train_train_idx,]
     train_test  = train[-train_train_idx,]
     
-    x = model.matrix(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    #sample model = model.n4
+    
+    x = model.matrix(log.SalePrice  ~ OverallQual + LotArea + LotFrontage + OverallCond +
                        YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                        BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Condition2 +
                        WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
                        Utilities +  MSZoning  + SaleCondition + Functional + Street + GarageQual +  
                        MasVnrType + BsmtExposure + RoofMatl + YearRemodAdd + Fence + MoSold +
-                       CentralAir, data=train_train)
-    y = train_train$SalePrice
-    y.test = train_test$SalePrice
+                       CentralAir, data = train_train)
+    
+    y = train_train$log.SalePrice
+   
+    y.test = train_test$log.SalePrice
     
     
     grid = 10^seq(5, -2, length = 100)
     
-    #Running 5-fold cross validation.
-    x.test = model.matrix(SalePrice ~ OverallQual + MSSubClass + LotArea + LotFrontage + OverallCond +
+    
+    x.test = model.matrix(log.SalePrice ~ OverallQual + LotArea + LotFrontage + OverallCond +
                                 YearBuilt + MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF +
                                 BedroomAbvGr + KitchenAbvGr + FireplaceQu +  GarageCars + Condition2 +
                                 WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
                                 Utilities +  MSZoning  + SaleCondition + Functional + Street + GarageQual +  
                                 MasVnrType + BsmtExposure + RoofMatl + YearRemodAdd + Fence + MoSold +
                                 CentralAir, data=train_test)
+    
+    #Running 5-fold cross validation.
     set.seed(0)
     cv.ridge = cv.glmnet(x, y, lambda = grid, alpha = 0, nfolds = 5)
     plot(cv.ridge, main = "Ridge Regression\n")
     best.lambda.ridge = cv.ridge$lambda.min
-    best.lambda.ridge # 12045.04
-    log(best.lambda.ridge) # 9.396408
+    best.lambda.ridge # 0.01
+     
     
     #What is the test MSE associated with this best value of lambda?
     ridge.models.train = glmnet(x, y, alpha = 0, lambda = grid)
     ridge.best.lambda.train = predict(ridge.models.train, s = best.lambda.ridge, newx = x.test)
-    mean((ridge.best.lambda.train - y.test)^2) # 2,294.467.104   2,190.558.073
+    mean((ridge.best.lambda.train - y.test)^2) #0.04010766
     
-    ridge.best.lambda.train = predict.cv.glmnet(cv.ridge, s ="lambda.min", newx = x[train_test, ])
-    mean((ridge.best.lambda.train - y.test)^2)
+    #or
+    ridge.best.lambda.train = predict.cv.glmnet(cv.ridge, s ="lambda.min", newx = x.test)
+    mean((ridge.best.lambda.train - y.test)^2) #0.04010766
     
     
     
@@ -612,24 +540,73 @@
     lasso_model = glmnet(x, y, alpha = 1, lambda = grid)
     plot(lasso_model, xvar = "lambda", label = TRUE, main = "Lasso Regression")
     
-    summary(lasso_model)
-    
-    lasso_model$beta
-    
-    
+
     #Running 5-fold cross validation.
     set.seed(0)
-    cv.lasso = cv.glmnet(x[train_train, ], y[train_train],
+    cv.lasso = cv.glmnet(x, y,
                          lambda = grid, alpha = 1, nfolds = 5)
     plot(cv.lasso, main = "Lasso Regression\n")
     best.lambda.lasso = cv.lasso$lambda.min
-    best.lambda.lasso #394.4206
-    log(best.lambda.lasso) #5.977418
+    best.lambda.lasso #0.01
     
     
-    #What is the test MSE associated with this best value of lambda?
-    lasso.model.train = glmnet(x[train_train, ], y[train_train], alpha = 1, lambda = grid)
-    lasso.best.lambda.train = predict(lasso.model.train, s = best.lambda.lasso, newx = x[train_test, ])
-    mean((lasso.best.lambda.train - y.test)^2) #2,324.445.074
+    
+    # What is the test MSE associated with this best value of lambda?
+    lasso.model.train = glmnet(x, y, alpha = 1, lambda = grid)
+    lasso.best.lambda.train = predict(lasso.model.train, s = best.lambda.lasso, newx = x.test)
+    mean((lasso.best.lambda.train - y.test)^2) # 0.03932375
+    
+    #or
+    lasso.best.lambda.train = predict.cv.glmnet(cv.lasso, s ="lambda.min", newx = x.test)
+    mean((lasso.best.lambda.train - y.test)^2) # 0.03932375
+    
+    
+    
+    
+    #Full Model Lasso Regression
+    
+    train1 = train[-c(1,80,81,82)]
+  
+    
+    model = lm(log.SalePrice ~ .,  data = train1)
+    
+    summary(model)
+    sapply(train1, class)
+    
+    set.seed(0)
+    train_train_id = sample(1:nrow(train1), 7*nrow(train1)/10)
+    train_trainn = train1[train_train_id,]
+    train_testt  = train1[-train_train_id,]
+    
+    xx = model.matrix(log.SalePrice ~ ., data = train_trainn)
+    yy = train_trainn$log.SalePrice
+    yy.test = train_testt$log.SalePrice
+    
+    
+    grid = 10^seq(5, -2, length = 100)
+    
+    
+    x.testt = model.matrix(log.SalePrice ~ ., data=train_testt)
+    
+    set.seed(0)
+    cv.lassoo = cv.glmnet(xx, yy,
+                         lambda = grid, alpha = 1, nfolds = 10)
+    plot(cv.lassoo, main = "Lasso Regression\n")
+    best.lambda.lassoo = cv.lassoo$lambda.min
+    best.lambda.lassoo #0.01
+    
+    
+    lasso.model.trainn = glmnet(xx, yy, alpha = 1, lambda = grid)
+    lasso.best.lambda.trainn = predict(lasso.model.trainn, s = best.lambda.lassoo, newx = x.testt)
+    mean((lasso.best.lambda.trainn - yy.test)^2) # 0.04186547
+    
+    lasso.best.lambda.trainn = predict.cv.glmnet(cv.lassoo, s ="lambda.min", newx = x.testt)
+    mean((lasso.best.lambda.trainn - yy.test)^2) # 0.04186547
+    
+
+    
+    mean(abs(predict(model) - train$log.SalePrice)) #0.06550706
+    
+    sum((predict(model) - train$log.SalePrice)^2 / length(train$log.SalePrice)) #0.008944203
     
     
