@@ -1,11 +1,18 @@
-install.packages("randomForest")
+#install.packages("randomForest")
 library(randomForest)
 library(MASS)
 library(tree)
 library(dplyr)
 
 set.seed(0)
-df_train <- read.csv("train.csv", stringsAsFactors = F)
+df_train <- read.csv("./data/train.csv", stringsAsFactors = F)
+df_train <- df_train %>% mutate(sale_log=log(SalePrice))
+
+#df_train <- df_train[(df_train$SalePrice<300000 | df_train$GrLivArea>4000),]
+
+plot(df_train$SalePrice)
+hist(df_train$SalePrice)
+hist(df_train$sale_log)
 
 #Get the fraction of missing values in train dataset
 #not a high value but missing values have to be handled prior to running the randaom forest model
@@ -52,8 +59,11 @@ str(df_train)
 
 checkna(df_train)
 
-rftrain = randomForest(SalePrice~., data = df_train , importance = TRUE)
+rftrain = randomForest(SalePrice ~. -sale_log, data = df_train , importance = TRUE)
 rftrain
+#predict(rftrain,df_train)
+
+mean(abs(df_train$SalePrice-predict(rftrain,df_train)))
 
 
 ########FROM LECTURE NOTES
@@ -67,10 +77,10 @@ rftrain
 set.seed(0)
 oob.err = numeric(81)
 
-for (mtry in 1:81) {
-  fit = randomForest(SalePrice ~ ., data = df_train, mtry = mtry)
-  oob.err[mtry] = fit$mse[500]
-  cat("We're performing iteration", mtry, "\n")
+for (n in 1:81) {
+  fit = randomForest(sale_log ~ ., data = df_train, mtry = n)
+  oob.err[n] = fit$mse[500]
+  cat("We're performing iteration", n, "\n")
 }
 
 #Visualizing the OOB error.
