@@ -59,9 +59,15 @@ train$MasVnrType[is.na(train$MasVnrType)] = 'None' #assume missing means no vene
 train$MasVnrArea[is.na(train$MasVnrArea)] = 0 # none in Veneer Type is always 0 in Veneer Area
 train$Electrical[is.na(train$Electrical)] = 'SBrkr' # missing is imputed as the majority class (majority by large margin)
 
+#Force some quality variables to be factor, not numeric. 
+train$OverallQualCategorical = as.character(train$OverallQual)
 
 write.csv(train, file='train1.csv', row.names = FALSE)
+```
 
+In the first phase, we did a wave of NA to None replacement where it made sense. Next we are doing imputation of NA's. 
+
+```{r}
 
 rm('df')
 rm('train')
@@ -74,8 +80,9 @@ myNa = is.na(train)
 pNA = apply(myNa, 2, sum)/nrow(myNa) # sum along cols
 barplot(pNA)
 pNA[order(pNA,decreasing=TRUE)]
+```
 
-
+```{r}
 # Impute missing LotFrontage = median LotFrontage of same LotConfig, Neighborhood. 
 # This could still leave NA if there is no more data of the same LotConfig, Neighborhood. 
 # We can do a second pass where we impute the still-missing NA = median of LotFrontage of same LotConfig
@@ -102,6 +109,61 @@ train$GarageYrBlt = NULL
 write.csv(train, file='train_superclean.csv', row.names = FALSE)
 
 ```
+
+The cleaning is done and two files have been saved as a result: train_clean.csv and train_superclean.csv. 
+Let's load them for additional inspection. 
+```{r}
+df = read.csv('train_superclean.csv')
+sapply(train,class)
+```
+
+Create a new variable called StoreyCount
+```{r}
+df = read.csv('train_superclean.csv')
+train = df
+
+# reproduce proportion of missing
+myNa = is.na(train)
+pNA = apply(myNa, 2, sum)/nrow(myNa) # sum along cols
+barplot(pNA)
+pNA[order(pNA,decreasing=TRUE)]
+
+train$storeyCount = as.double(stringr::str_extract(train$HouseStyle,'[:digit:]+[.]?[:digit:]?'))
+myNa = is.na(train)
+pNA = apply(myNa, 2, sum)/nrow(myNa) # sum along cols
+barplot(pNA)
+pNA[order(pNA,decreasing=TRUE)] # about 7% are still missing in storeyCount column. 
+
+# To fill in the remaining missing it is hard by inference from MSSubClass column. 
+# We need to do a tree-based classification: 
+library(tree)
+set.seed(0)
+alltrain = train[!is.na(train$storeyCount),]
+train_train_idx = sample(computed_storeys_idx, 7*nrow(alltrain)/10)
+train.train  = alltrain[train_train_idx,]
+train.test   = alltrain[-train_train_idx,]
+tree.storey  = tree(storeyCount ~ X2ndFlrSF + MSSubClass, train.train) #BedroomAbvGr
+#plot(tree.storey)
+#text(tree.storey, pretty=0)
+#Use the tree to predict, without any cross-validation, since this problem is easy. 
+tree.pred    = predict(tree.storey, train.test)
+RMSE         = sqrt(mean((tree.pred-train.test$storeyCount)^2))  # 0.1226, that's nothing because our decision is quantized at 1, 1.5, 2, 2.5
+# apply the quantization to the tree.pred results and recompute the RMSE
+tree.pred    = round(tree.pred/0.5)*0.5 # nearest multiple of 0.5 
+RMSE         = sqrt(mean((tree.pred-train.test$storeyCount)^2))  # 0.1237, so RMSE stays largely same
+# This is great, so we can now use the tree.storey to predict the missing values
+missing.pred = predict(tree.storey, train[is.na(train$storeyCount),])
+missing.pred = round(missing.pred/0.5)*0.5
+train[is.na(train$storeyCount),'storeyCount'] = missing.pred
+
+myNa = is.na(train)
+pNA = apply(myNa, 2, sum)/nrow(myNa) # sum along cols
+barplot(pNA)
+pNA[order(pNA,decreasing=TRUE)] # about 7% are still missing in storeyCount column. 
+write.csv(train, file='train_superclean.csv', row.names = FALSE)
+
+```
+
 
 Lot Frontage is missing values for all categories of LotConfiguation, i.e. "Inside" lots have Lot Frontage, as do "CuldSac" lots. I also see that Inside lots in Edwards neighborhood have median = 60, whereas CulDSac lots in Edwards have 35. From this (and the below), it is clear that lot frontage is determined by LotConfig and Neighborhood, that is why we impute it where missing as the median of rows of same LotConfig and Neighborhood. 
 ```{r}
