@@ -10,8 +10,10 @@
     library(car)
     library(psych)
     train = read.csv('./data/train_superclean.csv') 
-    #train = train %>% mutate(log.SalePrice = log(SalePrice))
+    train = train %>% mutate(log.SalePrice = log(SalePrice))
     test = read.csv('./data/test_superclean.csv')
+    
+   
     
     numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
     numericVarNames <- names(numericVars) #saving names vector for use later
@@ -451,7 +453,7 @@
     
     
     # best model
-    model.n5 = lm(SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
+    model.n5 = lm(log.SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
                     MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + Fireplaces +
                     GarageCars + Condition2 + HeatingQC +
                     WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
@@ -495,9 +497,9 @@
     
     
     #MSE
-    mean(abs(predict(model.n4) - train$log.SalePrice)) #0.08010317
+    mean(abs(predict(model.n5) - train$log(SalePrice))) #0.08010317
     
-    sum((predict(model.n4) - train$log.SalePrice)^2 / length(train$log.SalePrice)) #0.01298258
+    sum((predict(model.n5) - train$log.SalePrice)^2 / length(train$log.SalePrice)) #0.01298258
   
     # less important ; Alley + MSZoning, LotShape , MasVnrType,
     #unneceseray variables :Condition2 + LotConfig + HeatingQC , Heating , Condition1, SaleType, 
@@ -532,7 +534,7 @@
     
     #sample model = model.n4
     
-    x = model.matrix(SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
+    x = model.matrix(log.SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
                        MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + Fireplaces +
                        KitchenAbvGr + GarageCars + Condition2 + HeatingQC +
                        WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
@@ -540,12 +542,12 @@
                        BsmtExposure + RoofMatl + YearRemodAdd +  
                        CentralAir, data = train_train)
     
-    y = train_train$SalePrice
+    y = train_train$log.SalePrice
    
-    y.test = train_test$SalePrice
+    y.test = train_test$log.SalePrice
     
     
-    x.test = model.matrix(SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
+    x.test = model.matrix(log.SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
                             MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + Fireplaces +
                             KitchenAbvGr + GarageCars + Condition2 + HeatingQC +
                             WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
@@ -612,13 +614,13 @@
     mean(abs(y.test-predict(lasso.model.train,newx = x.test)))
     
     
-    y.predict=predict(lasso.model.train, newx = x.test)
-    y.predict
+    y_predict=predict(lasso.model.train, newx = x.test)
+    y_predict
     y.test
     
-    mean((y.test-y.predict)^2)
+    mean((y.test-y_predict)^2)
     
-    mean(abs(y.test-y.predict))
+    mean(abs(y.test-y_predict))
     
     a.test1=model.matrix(data=a.test)
     
@@ -690,5 +692,13 @@
 
     
     
-    
+    SalePrice = predict(model.n5, newdata = test)
+    test_y = cbind(test , SalePrice)
+    View(test_y)
+    test_y = select(test_y, "Id", "SalePrice")
+    View(test_y)
+    write.csv(test_y, file = 'linear_model_kaggle.csv')
+    a = read.csv('linear_model_kaggle.csv')
+    View(a)
+   
    
