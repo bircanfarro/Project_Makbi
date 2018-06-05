@@ -470,7 +470,33 @@
     
     effect_plot(model.n5, pred = X2ndFlrSF  , interval = TRUE, plot.points = TRUE)
     
+    # We have a problem with the q-q plot. The data does not look normal. We need to eliminate bunch of outliers. 
+    plot(train$GrLivArea, train$SalePrice, main="Outliers")
+    train_nooutliers = filter(train, GrLivArea < 4000 | SalePrice > 300000)
+    train_nooutliers = filter(train_nooutliers, SaleCondition != 'Family' ) # not arms-length transaction ? 
+    train_nooutliers = filter(train_nooutliers, MSZoning != 'C (all)') # commercial zoning, so how can it be residential ?
     
+    # Some individual points that mess the q-q plot
+    train_nooutliers[632,]
+    train_nooutliers[89,]
+    train_nooutliers[1305,]
+    train_nooutliers[454,]
+    train_nooutliers[577,]
+    train_nooutliers[1295,]
+
+    train_nooutliers = train_nooutliers %>% mutate(log.SalePrice = log(SalePrice))
+    model.n5.nooutlier = lm(log.SalePrice ~ OverallQual +  log(LotArea) + LotFrontage + OverallCond +
+                              MasVnrArea + BsmtFinSF1 + BsmtFullBath + X2ndFlrSF + Fireplaces +
+                              GarageCars + Condition2 + HeatingQC +
+                              WoodDeckSF + ScreenPorch + PoolArea + X1stFlrSF + KitchenQual + Condition1 +
+                              Utilities +  MSZoning  + SaleCondition + Functional +   
+                              BsmtExposure + RoofMatl + YearRemodAdd +  
+                              CentralAir, data = train_nooutliers)
+    summary(model.n5.nooutlier)
+    plot(model.n5.nooutlier)
+    
+    
+    # Replace the normality q-q plot with an actual statistical test of normality. 
     
     
     sub_model.n5 = lm(log.SalePrice ~ OverallQual +  LotArea + LotFrontage + OverallCond +
@@ -616,7 +642,7 @@
     y.predict
     y.test
     
-    mean((y.test-y.predict)^2)
+    mean((y.test-y.predict)^2)n5
     
     mean(abs(y.test-y.predict))
     
